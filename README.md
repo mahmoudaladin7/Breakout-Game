@@ -6,40 +6,40 @@ Control the paddle, bounce the ball, break all the bricks, and try to beat your 
 
 🕹️ Features
 
-Paddle controlled by arrow keys or mouse
+- Paddle controlled by arrow keys or mouse
 
-Ball bounces off walls, paddle, and bricks
+-  Ball bounces off walls, paddle, and bricks
 
-3 lives per game
+-  3 lives per game
 
-+10 points per brick broken
+- +10 points per brick broken
 
-“You Win” and “Game Over” screens
+- “You Win” and “Game Over” screens
 
-Top score saved in localStorage
+- Top score saved in localStorage
 
-Responsive and written in clean, commented JavaScript
+- Responsive and written in clean, commented JavaScript
 
 ▶️ How to Play
 
-Open index.html in your browser.
+- Open index.html in your browser.
 
-Use ← and → or your mouse to move the paddle.
+- Use ← and → or your mouse to move the paddle.
 
-Don’t let the ball touch the bottom!
+- Don’t let the ball touch the bottom!
 
-Break all bricks to win.
+- Break all bricks to win.
 
-Your highest score is saved automatically.
+- Your highest score is saved automatically.
 
 🧠 Concepts Used
 
-Canvas rendering
+- Canvas rendering
 
-Collision detection
+- Collision detection
 
-Game loop (requestAnimationFrame)
+- Game loop (requestAnimationFrame)
 
-Event handling (keyboard + mouse)
+- Event handling (keyboard + mouse)
 
-Local storage for saving high scores
+- Local storage for saving high scores
