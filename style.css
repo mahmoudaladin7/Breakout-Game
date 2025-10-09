@@ -1,0 +1,13 @@
+body {
+  margin: 0;
+  background: #111;
+  display: grid;
+  place-items: center;
+  height: 100vh;
+}
+canvas {
+  background: #565454;
+  border: 1px solid #ccc;
+}
+.paddle {
+}
