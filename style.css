@@ -1,13 +1,16 @@
 body {
   margin: 0;
-  background: #111;
+  background: black;
   display: grid;
   place-items: center;
   height: 100vh;
+  background-image: url(Night\ City.jpg);
+  background-size: cover;
+  background-repeat: no-repeat;
 }
+#game,
 canvas {
-  background: #565454;
-  border: 1px solid #ccc;
-}
-.paddle {
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #ccc;
+  border-color: black;
 }

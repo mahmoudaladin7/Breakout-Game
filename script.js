@@ -1,7 +1,7 @@
 'use strict';
 
 const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { alpha: true });
 
 const paddle = {
   width: 100,
@@ -25,7 +25,7 @@ const paddle = {
     ctx.fill();
   },
   draw() {
-    ctx.fillStyle = '#47045cff';
+    ctx.fillStyle = '#af003492';
     paddle.capsuleRect(
       ctx,
       this.x,
@@ -52,7 +52,7 @@ const ball = {
   draw() {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = '#222';
+    ctx.fillStyle = '#ffffffff';
     ctx.fill();
   },
   update() {
@@ -84,6 +84,47 @@ const ball = {
 
 ball.y = paddle.y - ball.radius - 2;
 
+// Bricks grid (2D array)
+const brick = {
+  rows: 5,
+  cols: 9,
+  width: 80,
+  height: 40,
+  padding: 10,
+  offsetTop: 40,
+  offsetLeft: 35,
+};
+
+// Random Japanese character (Katakana set)
+function randomJapaneseChar() {
+  const chars =
+    'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワンガギグゲゴザジズゼゾダヂヅデドパピプペポバビブベボ';
+  return chars[Math.floor(Math.random() * chars.length)];
+}
+
+// Reverse-pyramid bricks: top row widest, centered, narrowing each row
+function generateReversePyramidBricks() {
+  const maxCols = brick.cols % 2 === 1 ? brick.cols : brick.cols - 1;
+  const rows = Math.floor((maxCols + 1) / 2);
+  return Array.from({ length: rows }, (_, row) => {
+    const colsInRow = maxCols - 2 * row;
+    const rowWidth = colsInRow * brick.width + (colsInRow - 1) * brick.padding;
+    const startX = (canvas.width - rowWidth) / 2;
+    return Array.from({ length: colsInRow }, (_, col) => ({
+      x: startX + col * (brick.width + brick.padding),
+      y: brick.offsetTop + row * (brick.height + brick.padding),
+      width: brick.width,
+      height: brick.height,
+      status: 1,
+      char: randomJapaneseChar(),
+    }));
+  });
+}
+
+const bricks = generateReversePyramidBricks();
+
+// Using blocks with random Japanese characters; no texture image.
+
 function keyDown(e) {
   if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D')
     paddle.dx = paddle.speed;
@@ -99,14 +140,28 @@ function keyUp(e) {
 document.addEventListener('keydown', keyDown);
 document.addEventListener('keyup', keyUp);
 
+function mouseMove(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const x = (e.clientX - rect.left) * scaleX;
+  paddle.x = x - paddle.width / 2;
+  if (paddle.x < 0) paddle.x = 0;
+  if (paddle.x + paddle.width > canvas.width)
+    paddle.x = canvas.width - paddle.width;
+}
+
+canvas.addEventListener('mousemove', mouseMove);
+
 function update() {
   paddle.update();
   ball.update();
+  checkBrickCollisions();
 }
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   paddle.draw();
+  drawBricks();
   ball.draw();
 }
 
@@ -117,3 +172,71 @@ function loop() {
 }
 
 loop();
+
+function drawBricks() {
+  for (let r = 0; r < bricks.length; r++) {
+    for (let c = 0; c < bricks[r].length; c++) {
+      const b = bricks[r][c];
+      if (!b.status) continue;
+      // Draw block background
+      ctx.fillStyle = 'rgba(109, 0, 24, 0.67)';
+      ctx.fillRect(b.x, b.y, b.width, b.height);
+      // Draw character centered on the block
+      const fontSize = Math.floor(b.height * 0.65);
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(b.char, b.x + b.width / 2, b.y + b.height / 2);
+    }
+  }
+}
+
+function checkBrickCollisions() {
+  for (let r = 0; r < bricks.length; r++) {
+    for (let c = 0; c < bricks[r].length; c++) {
+      const b = bricks[r][c];
+      if (!b.status) continue;
+
+      // Circle-rect overlap test (AABB vs circle approximation)
+      const withinX =
+        ball.x + ball.radius > b.x && ball.x - ball.radius < b.x + b.width;
+      const withinY =
+        ball.y + ball.radius > b.y && ball.y - ball.radius < b.y + b.height;
+      if (!(withinX && withinY)) continue;
+
+      // Determine collision side using previous position
+      const prevX = ball.x - ball.dx;
+      const prevY = ball.y - ball.dy;
+
+      const fromLeft = prevX + ball.radius <= b.x;
+      const fromRight = prevX - ball.radius >= b.x + b.width;
+      const fromTop = prevY + ball.radius <= b.y;
+      const fromBottom = prevY - ball.radius >= b.y + b.height;
+
+      if (fromLeft) {
+        ball.dx *= -1;
+        ball.x = b.x - ball.radius - 0.1;
+      } else if (fromRight) {
+        ball.dx *= -1;
+        ball.x = b.x + b.width + ball.radius + 0.1;
+      }
+
+      if (fromTop) {
+        ball.dy *= -1;
+        ball.y = b.y - ball.radius - 0.1;
+      } else if (fromBottom) {
+        ball.dy *= -1;
+        ball.y = b.y + b.height + ball.radius + 0.1;
+      }
+
+      // Fallback: if none of the above sides detected, flip vertical
+      if (!fromLeft && !fromRight && !fromTop && !fromBottom) {
+        ball.dy *= -1;
+      }
+
+      b.status = 0;
+      return; // handle one brick per frame
+    }
+  }
+}
