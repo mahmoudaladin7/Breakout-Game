@@ -3,6 +3,18 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d', { alpha: true });
 
+// Game state
+let score = 0;
+let lives = 3;
+let running = false; // ball doesn't move until click
+let gameOver = false;
+let youWin = false;
+let animId = null;
+
+// High score (persisted across sessions)
+const HIGH_SCORE_KEY = 'breakout_high_score';
+let highScore = Number(localStorage.getItem(HIGH_SCORE_KEY) || 0);
+
 const paddle = {
   width: 100,
   height: 20,
@@ -74,10 +86,13 @@ const ball = {
       this.dx = 4 * hitPos;
     }
     if (this.y - this.radius > canvas.height) {
-      this.x = canvas.width / 2;
-      this.y = paddle.y - this.radius - 2;
-      this.dx = 3 * (Math.random() > 0.5 ? 1 : -1);
-      this.dy = -3;
+      // Ball touched bottom: lose a life and pause until click
+      lives = Math.max(0, lives - 1);
+      running = false;
+      resetBall();
+      if (lives === 0) {
+        gameOver = true;
+      }
     }
   },
 };
@@ -122,6 +137,7 @@ function generateReversePyramidBricks() {
 }
 
 const bricks = generateReversePyramidBricks();
+let remainingBricks = bricks.reduce((sum, row) => sum + row.length, 0);
 
 // Using blocks with random Japanese characters; no texture image.
 
@@ -151,11 +167,22 @@ function mouseMove(e) {
 }
 
 canvas.addEventListener('mousemove', mouseMove);
+canvas.addEventListener('click', () => {
+  if (!running && lives > 0) {
+    startRound();
+  }
+});
 
 function update() {
   paddle.update();
-  ball.update();
-  checkBrickCollisions();
+  if (running) {
+    ball.update();
+    checkBrickCollisions();
+  } else {
+    // Keep ball stuck to paddle before start / between lives
+    ball.x = paddle.x + paddle.width / 2;
+    ball.y = paddle.y - ball.radius - 2;
+  }
 }
 
 function draw() {
@@ -163,12 +190,15 @@ function draw() {
   paddle.draw();
   drawBricks();
   ball.draw();
+  drawHUD();
+  if (!running) drawPauseOverlay();
 }
 
 function loop() {
   update();
   draw();
-  requestAnimationFrame(loop);
+  if (gameOver || youWin) return;
+  animId = requestAnimationFrame(loop);
 }
 
 loop();
@@ -236,7 +266,66 @@ function checkBrickCollisions() {
       }
 
       b.status = 0;
+      score += 10;
+      if (score > (typeof highScore !== 'undefined' ? highScore : 0)) {
+        highScore = score;
+        try {
+          localStorage.setItem('breakout_high_score', String(highScore));
+        } catch (e) {}
+      }
+      remainingBricks = Math.max(0, remainingBricks - 1);
+      if (remainingBricks === 0) {
+        youWin = true;
+        running = false;
+      }
       return; // handle one brick per frame
     }
   }
+}
+
+function drawHUD() {
+  // Score (left)
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(`Score: ${score}`, 10, 8);
+  // Top score (center)
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(`Top Score: ${highScore}`, canvas.width / 2, 8);
+
+  // Lives as red hearts (right)
+  const heart = '❤';
+  const hearts = heart.repeat(Math.max(0, lives));
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#ca1815ff';
+  ctx.fillText(hearts, canvas.width - 10, 8);
+}
+
+function drawPauseOverlay() {
+  ctx.save();
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = 'bold 24px sans-serif';
+  const msg = gameOver ? 'Game Over' : youWin ? 'You Win' : 'Click to start';
+  ctx.fillText(msg, canvas.width / 2, canvas.height / 2);
+  ctx.restore();
+}
+
+function resetBall() {
+  ball.x = paddle.x + paddle.width / 2;
+  ball.y = paddle.y - ball.radius - 2;
+  ball.dx = 0;
+  ball.dy = 0;
+}
+
+function startRound() {
+  running = true;
+  // Give the ball an initial upward velocity with slight horizontal randomness
+  ball.dx = (Math.random() * 2 + 2) * (Math.random() > 0.5 ? 1 : -1);
+  ball.dy = -3;
 }
