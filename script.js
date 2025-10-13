@@ -146,6 +146,13 @@ function keyDown(e) {
     paddle.dx = paddle.speed;
   if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A')
     paddle.dx = -paddle.speed;
+  if (e.code === 'Space' || e.key === ' ') {
+    // Launch ball with spacebar if paused and not ended
+    if (!running && lives > 0 && !gameOver && !youWin) {
+      startRound();
+    }
+    if (e.preventDefault) e.preventDefault();
+  }
 }
 
 function keyUp(e) {
