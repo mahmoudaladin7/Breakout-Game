@@ -8,6 +8,20 @@
   </head>
   <body>
     <canvas id="game" width="850" height="500"></canvas>
+    <div id="menu" class="menu-overlay visible" aria-modal="true" role="dialog">
+      <div class="menu-panel">
+        <h1 id="menuTitle">Breakout</h1>
+        <p>Clear all the bricks without letting the ball fall. Advance through levels and beat your high score.</p>
+        <div class="menu-section">
+          <strong>Controls</strong>
+          <ul>
+            <li>Move: ←/→ or A/D or mouse</li>
+            <li>Serve ball: Space or click</li>
+          </ul>
+        </div>
+        <button id="startBtn" class="menu-btn" type="button">Start</button>
+      </div>
+    </div>
     <script src="script.js"></script>
   </body>
 </html>
